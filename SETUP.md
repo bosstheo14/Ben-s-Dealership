@@ -125,8 +125,8 @@ maintenance loop: edit `data.js` in VS Code, save, commit, push, done.
    `newmississippimotors.com` reads better than `newmississippi.com`.
 2. In Netlify: **Domain management → Add a domain**, enter it, follow the DNS steps.
 3. HTTPS turns itself on within a few minutes. You do not buy a certificate.
-4. Open `robots.txt` and `sitemap.xml` and replace `REPLACE-WITH-YOUR-DOMAIN.com`
-   with the real domain. Commit and push.
+4. Open `robots.txt` and `sitemap.xml` and update them to the live domain you are using.
+   Commit and push.
 
 **Decide who owns the domain and the Netlify account.** The cleanest arrangement is
 that the dealership owns both and adds you as a collaborator. If you own them and the
@@ -249,7 +249,7 @@ Work down this list. It is ordered by how much it matters.
 
 ### Should do in the first week
 
-8. Replace `REPLACE-WITH-YOUR-DOMAIN.com` in `robots.txt` and `sitemap.xml`.
+8. Update the domain in `robots.txt` and `sitemap.xml` to the live site URL.
 9. Add a favicon: put a small square PNG at `assets/img/favicon.png` and add
    `<link rel="icon" href="assets/img/favicon.png">` into the `<head>` of each page.
 10. Set up a Google Business Profile for the dealership. For a local lot this drives
