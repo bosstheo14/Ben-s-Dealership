@@ -1,4 +1,3 @@
-# Ben-s-Dealership
 # NewMississippi — dealership website
 
 A plain HTML, CSS and JavaScript website. No build step, no framework, no server.
@@ -134,3 +133,4 @@ If you are billing $15 a month to keep this running, this is roughly the work:
 **Yearly**
 - Renew the domain
 - Refresh the homepage headline and the about paragraph
+
