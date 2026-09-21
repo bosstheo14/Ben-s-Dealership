@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Inventory — NewMississippi Motors</title>
+  <meta name="description" content="Every vehicle on the lot in Jackson, MS, with price, mileage and VIN.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/site.css">
+</head>
+<body data-page="inventory.html">
+  <header id="site-header"></header>
+  <main>
+    <section class="banner"><div class="wrap">
+      <h1>Inventory</h1>
+      <p>Every vehicle on the lot, with the price in the window and the VIN on the page. Search by make, model, year, stock number or VIN.</p>
+    </div></section>
+
+    <section class="section"><div class="wrap">
+      <div class="invbar">
+        <input id="invq" type="search" placeholder="Search by make, model, year, stock or VIN" aria-label="Search inventory">
+        <select id="invsort" aria-label="Sort inventory">
+          <option value="newest">Newest first</option>
+          <option value="lowprice">Price, low to high</option>
+          <option value="highprice">Price, high to low</option>
+          <option value="lowmiles">Fewest miles</option>
+        </select>
+        <select id="invstatus" aria-label="Filter by availability">
+          <option value="available">Available only</option>
+          <option value="all">Include sold</option>
+        </select>
+        <span id="resultcount" style="color:var(--muted);font-weight:600"></span>
+      </div>
+      <div id="results"></div>
+    </div></section>
+  </main>
+  <footer id="site-footer"></footer>
+  <script src="JS/data.js"></script>
+  <script src="JS/site.js"></script>
+  <script src="JS/inventory.js"></script>
+</body>
+</html>

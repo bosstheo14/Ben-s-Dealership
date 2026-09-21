@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /owner.html
+
+Sitemap: https://REPLACE-WITH-YOUR-DOMAIN.com/sitemap.xml
