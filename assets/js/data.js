@@ -63,6 +63,52 @@ window.APPLY = {
 };
 
 /* ==========================================================================
+   WHO MAINTAINS THIS SITE
+
+   Owner tools uses this to address the "send me the update" email it builds
+   after the owner downloads their changes. Nothing else on the public site
+   uses this — it never appears anywhere a customer can see.
+   ========================================================================== */
+/* ==========================================================================
+   OWNER TOOLS PASSWORD
+
+   Owner tools (owner.html) asks for this password before showing anything.
+   This is a soft lock, not real security — anyone who opens their browser's
+   developer tools could get past it. That is fine here, because owner tools
+   never holds a customer's personal or financial information (that goes
+   straight to the lender, see window.APPLY above). It exists to keep random
+   visitors and search engines from wandering in, not to protect sensitive data.
+
+   TO CHANGE THE PASSWORD:
+   Easiest: the owner can do this themselves. Inside Owner Tools, under the
+   "Dealership info" tab, there is a "Change the owner tools password" section.
+   They set a new password there, download the update, and email it to you like
+   any other change — it takes effect once you deploy it, same as everything else.
+
+   To do it by hand instead:
+   1. Open owner.html in a browser and open the address bar's console (F12)
+   2. Run:  crypto.subtle.digest("SHA-256", new TextEncoder().encode("your new password")).then(b=>console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")))
+   3. Paste the result below as passwordHash. Never put the plain password here.
+   ========================================================================== */
+window.OWNER_ACCESS = {
+  passwordHash: "385078afedc58b8423811899be9e249ba03487febe6b4e38bacfe793f129afd6",
+  /* current password: Jackson-Motors-9153 — give this to the owner directly, not by email if you can help it */
+  passwordHint: "Text or call Theodore — he'll remind you without it being written here."
+  /* Shown on the login screen if the owner clicks "Forgot it?" so they have
+     somewhere to turn instead of being stuck. This is NOT a secret and is
+     visible to anyone who looks at this file, so never describe the password's
+     length, words, or pattern here — that helps a stranger guess it too, not
+     just the owner. Point them back to you, or to wherever you two agreed the
+     password lives (a shared note, a text thread). Leave this "" to hide the
+     "Forgot it?" link entirely. */
+};
+
+window.MAINTAINER = {
+  name:  "Theodore McCarty",
+  email: "theodoremccarty19@gmail.com"
+};
+
+/* ==========================================================================
    ANNOUNCEMENTS — newest first. Empty the list to hide the section.
    ========================================================================== */
 window.NEWS = [

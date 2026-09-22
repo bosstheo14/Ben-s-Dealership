@@ -1,4 +1,4 @@
-/* apply.js — the credit application: applicant, employment, vehicle */
+/* apply.js â€” the credit application: applicant, employment, vehicle */
 (function(){
 "use strict";
 var esc = NM.esc, S = NM.S;
@@ -19,7 +19,7 @@ var APPLICANT = [
   {k:"dlNumber",   l:"Driver license number", w:4, req:true},
   {k:"dlState",    l:"License state", w:2, req:true, type:"state"},
   {k:"dlExp",      l:"License expiration", w:3, req:true, type:"date"},
-  {k:"mobile",     l:"Mobile phone", w:4, req:true, type:"tel"},
+  {k:"mobile",     l:"Mobile phone", w:4, req:true, type:"tel", hint:"We'll call this number to finish your approval by phone"},
   {k:"email",      l:"Email", w:4, req:true, type:"email"},
   {k:"residence",  l:"Residence", w:4, type:"select", opts:["Own","Rent","Live with family","Other"]},
   {k:"yearsAt",    l:"Years at residence", w:2, mode:"numeric"},
@@ -87,8 +87,7 @@ function picker(){
 }
 function formView(){
   return '<section class="section"><div class="wrap narrow">'
-    + '<div class="notice">Your application is sent from your own email, so nothing is stored on this website. '
-    + "Do not put a Social Security number here \u2014 we collect that in person when you come in.</div>"
+    + '<div class="notice">Takes about two minutes. Fill this out and we start on your approval right away' + (S.phone ? " \u2014 or call us directly at " + esc(S.phone) + "." : ".") + "</div>"
     + '<div class="form">'
       + '<div class="fieldset"><h2>Applicant information</h2>'
         + '<p class="note">Enter your name exactly as it appears on your driver license.</p>'
@@ -112,7 +111,8 @@ function text(){
     }).filter(Boolean).join("\n");
   }
   return "Credit application \u2014 " + S.name + "\n"
-    + "Submitted " + new Date().toLocaleString() + "\n\n"
+    + "Submitted " + new Date().toLocaleString() + "\n"
+    + "NOTE: no SSN was collected on the website. Call the applicant to take it by phone before running credit.\n\n"
     + block("APPLICANT", APPLICANT) + "\n\n"
     + block("EMPLOYMENT", EMPLOYMENT) + "\n\n"
     + block("VEHICLE", VEHICLE) + "\n";
@@ -123,7 +123,7 @@ function doneView(){
     + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(text());
   return '<section class="section"><div class="wrap narrow">'
     + '<h2 style="font-size:36px;margin-bottom:10px">Your application is ready to send</h2>'
-    + '<p style="color:var(--muted)">Send it with the button below, then bring your license and a recent pay stub when you come in.</p>'
+    + '<p style="color:var(--muted)">We\'ll call you shortly at the number you gave to finish your approval \u2014 it only takes a few minutes on the phone.</p>'
     + (S.email ? "" : '<div class="notice">No dealership email is set in data.js yet, so there is nowhere to send this. Add one and refresh.</div>')
     + '<div class="form"><div class="fieldset"><pre class="summary">' + esc(text()) + "</pre></div>"
     + '<div class="formfoot">'

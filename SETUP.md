@@ -177,10 +177,23 @@ from a vehicle it reminds them of the stock number.
 ### 3.3 Until they have that URL
 
 Leave `mode: "builtin"`. The form works, it validates properly, and it is fine for
-showing the owner how it looks. **It is not fine for real applicants**, because it
-hands the completed application to the applicant's email program, and ordinary email
-is not an acceptable way to move a date of birth and a driver license number. As a
-dealer, your client is covered by the FTC Safeguards Rule for exactly this data.
+showing the owner how it looks. **The form never asks for a Social Security number.**
+It tells applicants clearly, in three places — the top of the form, a hint under the
+mobile phone field, and the confirmation screen — that you will call them to take it
+over the phone instead. The email you receive also carries a reminder line at the top
+so it's obvious which applications still need that call before you can run credit.
+This is a deliberate bridge, not a shortcut: a real SSN field on this form would hand
+the number to the applicant's email program, and ordinary email is not an acceptable
+way to move a Social Security number. As a dealer, your client is covered by the FTC
+Safeguards Rule for exactly this data — do not add an SSN field to `apply.js` to
+"speed things up," even temporarily.
+
+**The moment `mode` flips to `"hosted"`,** this entire built-in form — SSN language
+included — stops showing. Every Apply button goes straight to the lender's page
+instead, and the lender's own form collects the SSN directly into their secure,
+bureau-connected pipeline. That flip, not a form field here, is the actual fix for
+the phone-call friction. Treat the phone workflow as temporary and prioritize getting
+the lender URL, not as a permanent process to optimize.
 
 If they want to collect applications themselves rather than through a lender, the
 honest answer is that it needs more than a website: encrypted storage, access control,
@@ -198,11 +211,15 @@ normal form, and produces a new `data.js` file plus any new photos for them to s
 
 ### 4.1 What you tell the owner
 
-> Go to `yourdomain.com/owner.html` and bookmark it. Add cars, mark things sold, post
-> announcements, change your hours. When you are done, press **Download the updated
-> data file**, and if you added photos press **Download new photos** too. Email me both
-> and the website will be updated the same day. Nothing you do on that page goes live
-> by itself, so you cannot break anything.
+> Go to `yourdomain.com/owner.html` and bookmark it. The password is
+> **Jackson-Motors-9153** — enter it once per browser session. Add cars, mark things
+> sold, post announcements, change your hours. When you're done, press **Download
+> the updated data file**, and if you added photos press **Download new photos**
+> too. Then press **Open email to Theodore** — it opens your email app with
+> everything filled in, but you still need to attach the file(s) you just
+> downloaded before hitting send, since email can't grab them automatically. I'll
+> have the site updated the same day. Nothing you do on that page goes live by
+> itself, so you cannot break anything.
 
 ### 4.2 What you do when their email arrives
 
@@ -214,7 +231,40 @@ normal form, and produces a new `data.js` file plus any new photos for them to s
 
 Two minutes of work, which is what makes $15 a month sustainable.
 
-### 4.3 Worth knowing
+### 4.3 The password
+
+`owner.html` now asks for a password before showing anything. The current one is:
+
+```
+Jackson-Motors-9153
+```
+
+Give this to the owner directly — text or tell them in person, not email, since
+email is the one channel this password is meant to keep people out of things from.
+
+**Be clear with the owner about what this is and isn't.** It's a static site with
+no server, so this is a soft lock: it keeps casual visitors and search engines out
+of the page, not a determined technical person, since the check runs entirely in
+the browser. That's an acceptable trade here because Owner tools never holds a
+customer's personal or financial data — that goes straight to the lender (Part 3).
+Worst case if someone bypassed it, they'd see inventory-editing tools, not anything
+sensitive. Don't reuse this password anywhere that actually matters.
+
+The gate remembers a correct entry for the rest of that browser tab session, so the
+owner won't be asked again until they close the tab or restart their browser.
+
+**To change the password**, open `owner.html`, press F12 to open developer tools,
+click the Console tab, and run:
+
+```js
+crypto.subtle.digest("SHA-256", new TextEncoder().encode("your new password")).then(b=>console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")))
+```
+
+Copy the long string it prints, then in `assets/js/data.js` find `window.OWNER_ACCESS`
+and paste it in as `passwordHash`. Save, commit, push. Never put the plain password
+in that file — only the hash.
+
+### 4.4 Worth knowing
 
 - The generated `data.js` is valid JavaScript with the comments replaced by a
   timestamp header. It is still perfectly editable by hand.

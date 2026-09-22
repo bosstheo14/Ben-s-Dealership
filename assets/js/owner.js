@@ -11,16 +11,78 @@
 "use strict";
 var esc = NM.esc;
 var root = document.getElementById("owner");
+var SESSION_KEY = "nm_owner_ok";
+
+/* ---------- password gate ---------- */
+function sha256Hex(text){
+  var data = new TextEncoder().encode(text);
+  return crypto.subtle.digest("SHA-256", data).then(function(buf){
+    return Array.prototype.map.call(new Uint8Array(buf), function(b){
+      return b.toString(16).padStart(2, "0");
+    }).join("");
+  });
+}
+function showGate(){
+  root.innerHTML = '<div class="form" style="max-width:420px;margin:0 auto"><div class="fieldset">'
+    + "<h2>Owner tools</h2><p class=\"note\">Enter the password to continue.</p>"
+    + '<div class="fields"><div class="f w12" id="gateField">'
+      + '<label for="gatePw">Password</label>'
+      + '<input id="gatePw" type="password" autocomplete="current-password">'
+    + "</div></div>"
+    + '<p style="margin-top:4px"><button type="button" class="btn btn-line btn-sm" id="gateForgot">Forgot it?</button></p>'
+    + '<div id="gateHint"></div>'
+    + "</div>"
+    + '<div class="formfoot"><button class="btn btn-gold" id="gateGo">Continue</button></div></div>';
+  var input = document.getElementById("gatePw");
+  input.focus();
+  document.getElementById("gateForgot").addEventListener("click", function(){
+    var access = window.OWNER_ACCESS || {};
+    var hint = access.passwordHint;
+    document.getElementById("gateHint").innerHTML = '<p class="hint" style="margin-top:8px">'
+      + (hint ? esc(hint) : "No hint has been set for this site. Reach out to whoever set up the website.") + "</p>";
+  });
+  function attempt(){
+    var access = window.OWNER_ACCESS || {};
+    if(!access.passwordHash){ boot(); return; }
+    sha256Hex(input.value).then(function(hash){
+      if(hash === access.passwordHash){
+        try{ sessionStorage.setItem(SESSION_KEY, "1"); }catch(e){}
+        boot();
+      } else {
+        document.getElementById("gateField").classList.add("bad");
+        var f = document.getElementById("gateField");
+        if(!f.querySelector(".err")){
+          f.insertAdjacentHTML("beforeend", '<span class="err">That password is not right.</span>');
+        }
+        input.value = ""; input.focus();
+      }
+    });
+  }
+  document.getElementById("gateGo").addEventListener("click", attempt);
+  input.addEventListener("keydown", function(e){ if(e.key === "Enter") attempt(); });
+}
+var access = window.OWNER_ACCESS || {};
+var already = false;
+try{ already = sessionStorage.getItem(SESSION_KEY) === "1"; }catch(e){}
+if(access.passwordHash && !already){ showGate(); }
+else { boot(); }
+
+function boot(){
 
 /* working copies, so nothing is edited in place */
 var S    = JSON.parse(JSON.stringify(window.SITE || {}));
 var A    = JSON.parse(JSON.stringify(window.APPLY || {mode:"builtin", hostedUrl:"", hostedName:""}));
 var NEWS = JSON.parse(JSON.stringify(window.NEWS || []));
 var INV  = JSON.parse(JSON.stringify(window.INVENTORY || []));
+var PW   = JSON.parse(JSON.stringify(window.OWNER_ACCESS || {passwordHash:"", passwordHint:""}));
+var MAINT = JSON.parse(JSON.stringify(window.MAINTAINER || {name:"", email:""}));
+var pwChanged = false;
 
 var tab = "inventory";
 var editing = null;
-var pending = [];   /* resized photos waiting to be downloaded */
+var pending = [];      /* resized photos waiting to be downloaded */
+var dataDownloaded = false;
+var photosDownloaded = false;
 
 /* ---------- generate the new data.js ---------- */
 function buildDataFile(){
@@ -32,6 +94,8 @@ function buildDataFile(){
     + "   ========================================================================== */\n\n"
     + "window.SITE = "      + JSON.stringify(S,    null, 2) + ";\n\n"
     + "window.APPLY = "     + JSON.stringify(A,    null, 2) + ";\n\n"
+    + "window.OWNER_ACCESS = " + JSON.stringify(PW, null, 2) + ";\n\n"
+    + "window.MAINTAINER = " + JSON.stringify(MAINT, null, 2) + ";\n\n"
     + "window.NEWS = "      + JSON.stringify(NEWS, null, 2) + ";\n\n"
     + "window.INVENTORY = " + JSON.stringify(INV,  null, 2) + ";\n";
 }
@@ -206,7 +270,55 @@ function siteTab(){
         + "</select></div>"
       + '<div class="f w8"><label for="ap_url">Lender application link</label>'
         + '<input id="ap_url" data-apply="hostedUrl" value="' + esc(A.hostedUrl || "") + '" placeholder="https://"></div>'
-    + "</div></div></div>";
+    + "</div></div>"
+    + '<div class="fieldset"><h2>Change the owner tools password</h2>'
+      + '<p class="note">Set a new password for this page. It only takes effect once you download the '
+      + 'update and send it to whoever maintains the site \u2014 exactly like every other change here.</p>'
+      + '<div class="fields">'
+        + '<div class="f w4"><label for="pw_new">New password</label><input id="pw_new" type="text" placeholder="something you\u2019ll remember"></div>'
+        + '<div class="f w4"><label for="pw_confirm">Type it again</label><input id="pw_confirm" type="text"></div>'
+        + '<div class="f w4"><label for="pw_hint">Hint (optional)</label><input id="pw_hint" value="' + esc(PW.passwordHint || "") + '" placeholder="shown if you forget it"></div>'
+        + '<div class="f w12"><span class="hint">The hint is not private \u2014 anyone can see it. Don\u2019t put the password itself, or a description of it, in the hint.</span></div>'
+      + '</div>'
+      + (pwChanged ? '<p class="notice" style="margin-top:16px">New password set for this session. Download the update below and send it along to make it live.</p>' : '')
+      + '<div style="margin-top:14px"><button class="btn btn-navy btn-sm" id="setPassword">Set new password</button></div>'
+    + "</div></div>";
+}
+
+/* ---------- email the maintainer ---------- */
+function maintainer(){ return window.MAINTAINER || {}; }
+function changesSummary(){
+  var lines = [];
+  lines.push(INV.length + " vehicle" + (INV.length === 1 ? "" : "s") + " in inventory");
+  lines.push(NEWS.length + " announcement" + (NEWS.length === 1 ? "" : "s"));
+  if(pwChanged) lines.push("The owner tools password was changed. Log in with the NEW one once this is live.");
+  if(pending.length) lines.push(pending.length + " new photo" + (pending.length === 1 ? "" : "s") + " attached: " + pending.map(function(p){ return p.name; }).join(", "));
+  return lines.join("\n");
+}
+function mailHref(){
+  var m = maintainer();
+  var subject = "NewMississippi website update — " + new Date().toLocaleDateString();
+  var body = "Hi" + (m.name ? " " + m.name : "") + ",\n\n"
+    + "Please update the website with the attached file" + (pending.length ? "s" : "") + ".\n\n"
+    + "BEFORE YOU SEND: attach data.js" + (pending.length ? " and the " + pending.length + " photo" + (pending.length === 1 ? "" : "s") + " you just downloaded" : "")
+    + " from your Downloads folder \u2014 this email does not attach them for you.\n\n"
+    + "What changed:\n" + changesSummary() + "\n\n"
+    + "Thanks!";
+  return "mailto:" + encodeURIComponent(m.email || "") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+}
+function emailPrompt(){
+  var m = maintainer();
+  if(!dataDownloaded) return "";
+  if(!m.email){
+    return '<div class="notice" style="border-left-color:var(--brick)">'
+      + "The person who maintains this site hasn't set up an email address to send updates to yet. "
+      + "Save the downloaded file somewhere safe and send it to them however you normally would.</div>";
+  }
+  return '<div class="notice" style="border-left-color:var(--brick)">'
+    + "<b>One more step.</b> Your email program is about to open with everything filled in. "
+    + "<b>Attach the file" + (pending.length ? "s" : "") + " you just downloaded</b> from your Downloads folder before you hit send \u2014 "
+    + "email cannot attach them for you.<br><br>"
+    + '<a class="btn btn-gold btn-sm" id="openMail" href="' + mailHref() + '">Open email to ' + esc(m.name || m.email) + "</a></div>";
 }
 
 /* ---------- shell ---------- */
@@ -218,11 +330,12 @@ function render(){
   root.innerHTML = '<div class="notice"><b>Nothing here changes the live website by itself.</b> '
       + "Make your changes, press <b>Download the updated data file</b>, then send that file "
       + "(and any photos) to whoever maintains the site. Keep this tab open until you have downloaded everything.</div>"
-    + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">'
       + '<button class="btn btn-gold" id="dlData">Download the updated data file</button>'
       + (pending.length ? '<button class="btn btn-navy" id="dlPhotos">Download ' + pending.length + " new photo" + (pending.length === 1 ? "" : "s") + "</button>" : "")
       + '<a class="btn btn-line" href="index.html">View the site</a>'
     + "</div>"
+    + emailPrompt()
     + '<div class="tabs">' + tabs + "</div>" + body;
 }
 
@@ -297,7 +410,26 @@ root.addEventListener("click", function(e){
     return;
   }
 
-  if(t.id === "dlData"){ downloadText("data.js", buildDataFile(), "text/javascript"); return; }
+  if(t.id === "setPassword"){
+    var pw1 = document.getElementById("pw_new").value;
+    var pw2 = document.getElementById("pw_confirm").value;
+    var hint = document.getElementById("pw_hint").value.trim();
+    if(pw1.length < 6){ NM.toast("Use at least 6 characters."); return; }
+    if(pw1 !== pw2){ NM.toast("Those two don't match. Try again."); return; }
+    sha256Hex(pw1).then(function(hash){
+      PW.passwordHash = hash;
+      PW.passwordHint = hint;
+      pwChanged = true;
+      render();
+      NM.toast("New password set. Download the update below and send it to make it live.");
+    });
+    return;
+  }
+
+  if(t.id === "dlData"){
+    downloadText("data.js", buildDataFile(), "text/javascript");
+    dataDownloaded = true; render(); return;
+  }
   if(t.id === "dlPhotos"){
     pending.forEach(function(ph, i){
       setTimeout(function(){
@@ -307,6 +439,10 @@ root.addEventListener("click", function(e){
       }, i * 400);
     });
     NM.toast("Saving " + pending.length + " photo" + (pending.length === 1 ? "" : "s") + " to your downloads folder.");
+    photosDownloaded = true; render(); return;
+  }
+  if(t.id === "openMail"){
+    setTimeout(function(){ NM.toast("If nothing opened, your computer has no default email program set."); }, 1200);
     return;
   }
 });
@@ -316,4 +452,5 @@ window.addEventListener("beforeunload", function(e){
 });
 
 render();
+}
 })();
